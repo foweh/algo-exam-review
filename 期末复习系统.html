@@ -318,12 +318,6 @@ body {
 
 <div class="navbar">
   <h1>📚 算法设计与分析 · 期末复习</h1>
-  <div class="stats" id="navStats">
-    <span>📊 <span id="totalDone">0</span> 题</span>
-    <span>✅ <span id="totalCorrect">0</span></span>
-    <span>📈 <span id="totalRate">0%</span></span>
-    <span>📕 错题 <span id="navWrong">0</span></span>
-  </div>
 </div>
 <div class="loading-bar" id="loadingBar"></div>
 
@@ -1240,15 +1234,6 @@ body {
   }
 
   function updateNavStats() {
-    var totalDone = 0, totalCorrect = 0;
-    Object.values(scoreData).forEach(function(s) {
-      totalDone += (s.done || 0);
-      totalCorrect += (s.correct || 0);
-    });
-    $('totalDone').textContent = totalDone;
-    $('totalCorrect').textContent = totalCorrect;
-    $('totalRate').textContent = totalDone > 0 ? (totalCorrect / totalDone * 100).toFixed(1) + '%' : '0%';
-    $('navWrong').textContent = wrongBook.length;
     $('wrongTabCount').textContent = wrongBook.length;
   }
 
