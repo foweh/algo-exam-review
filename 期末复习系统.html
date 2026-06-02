@@ -525,6 +525,7 @@ body {
     if (mode === 'wrongbook') renderWrongBook();
     if (mode === 'knowledge') renderKnowledgePoints();
     if (mode === 'examfocus') renderExamFocusPoints();
+    if (mode === 'examfocus' && typeof renderExamFocusPointsFromFile !== 'undefined') renderExamFocusPointsFromFile();
     if (mode === 'exam' && examTimer) {
       updateExamTimer();
     }
@@ -1298,6 +1299,35 @@ body {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
   }
+
+  // ── 考前速记渲染函数 ──
+  window.renderExamFocusPointsFromFile = function() {
+    var list = document.getElementById('examFocusList');
+    if (!list) return;
+    var points = window.题库.getExamFocusPoints();
+    if (!points || points.length === 0) {
+      list.innerHTML = '<div class="knowledge-empty">📭 暂无考前速记内容</div>';
+      return;
+    }
+
+    var html = '';
+    var currentTag = '';
+    points.forEach(function(p) {
+      var tags = (p.tags || []).join(' ');
+      if (tags) tags = '<span style="font-size:12px;color:#f59e0b;background:#fffbeb;padding:2px 8px;border-radius:8px;margin-left:8px">' + tags + '</span>';
+      html += '<div class="knowledge-card" style="border-left-color:#f59e0b">'
+           + '<div class="knowledge-header">'
+           + '<span class="knowledge-title">' + escapeHtml(p.title) + '</span>'
+           + tags
+           + '</div>'
+           + '<div class="knowledge-content">' + formatKnowledgeContent(p.content) + '</div>'
+           + '</div>';
+    });
+    list.innerHTML = html;
+  };
+
+  // 覆盖原 renderExamFocusPoints
+  window.renderExamFocusPoints = window.renderExamFocusPointsFromFile;
 
 })();
 </script>

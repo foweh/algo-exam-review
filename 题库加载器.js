@@ -52,7 +52,8 @@
     'questions/简答题.js',
     'questions/算法案例分析.js',
     'questions/explanations.js',
-    'questions/知识点.js'
+    'questions/知识点.js',
+    'questions/考前速记.js'
   ];
 
   // ==========================================================
@@ -151,6 +152,40 @@
                p.content.toLowerCase().includes(keyword) ||
                p.keywords.some(function(k) { return k.toLowerCase().includes(keyword); });
       });
+    },
+
+    /** 获取考前速记知识点（从独立文件获取） */
+    getExamFocusPoints: function() {
+      return window.考前速记 || window.题库._examFocusPoints || [];
+    },
+
+    /** 搜索考前速记知识点 */
+    searchExamFocusPoints: function(keyword) {
+      var points = window.考前速记 || window.题库._examFocusPoints || [];
+      if (!keyword || keyword.trim() === '') return points;
+      keyword = keyword.toLowerCase().trim();
+      return points.filter(function(p) {
+        return p.title.toLowerCase().includes(keyword) ||
+               (p.tags || []).some(function(t) { return t.toLowerCase().includes(keyword); }) ||
+               (p.importance || '').toLowerCase().includes(keyword) ||
+               p.content.toLowerCase().includes(keyword);
+      });
+    },
+
+    /** 获取指定类别的知识点 */
+    getKnowledgePointsByCategory: function(category) {
+      var points = window.题库._knowledgePoints || [];
+      if (!category || category.trim() === '') return points;
+      return points.filter(function(p) {
+        return p.category === category;
+      });
+    },
+
+    /** 获取所有知识点类别 */
+    getKnowledgeCategories: function() {
+      var points = window.题库._knowledgePoints || [];
+      var categories = new Set(points.map(function(p) { return p.category; }));
+      return Array.from(categories);
     },
 
     /** 原始数据（直接操作） */
