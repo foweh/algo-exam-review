@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📚 算法设计与分析 · 期末复习系统</title>
+
+<!-- 只加载题库加载器，它会自动发现所有题型文件 -->
+<script src="题库加载器.js"></script>
+
+<style>
+/* ===== 全局 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #f0f2f5; color: #333; min-height: 100vh;
+}
+
+/* ===== 顶栏 ===== */
+.navbar {
+  background: linear-gradient(135deg, #1a3a5c 0%, #2d6a9f 100%);
+  color: #fff; padding: 14px 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15); position: sticky; top: 0; z-index: 100;
+}
+.navbar h1 { font-size: 20px; display: flex; align-items: center; gap: 8px; }
+.navbar .stats { font-size: 14px; opacity: .9; }
+.navbar .stats span { margin-left: 12px; }
+.loading-bar { height: 3px; background: #ffd700; transition: width .4s; width: 0%; }
+
+/* ===== 标签栏 ===== */
+.tab-bar {
+  display: flex; background: #fff; border-bottom: 1px solid #e0e0e0;
+  position: sticky; top: 56px; z-index: 99;
+}
+.tab {
+  flex: 1; text-align: center; padding: 12px 8px; cursor: pointer;
+  font-size: 15px; font-weight: 500; color: #666; border-bottom: 3px solid transparent;
+  transition: all .2s; user-select: none;
+}
+.tab:hover { background: #f7f9fc; }
+.tab.active { color: #1a3a5c; border-bottom-color: #2d6a9f; background: #f0f6ff; }
+
+/* ===== 主容器 ===== */
+.container { max-width: 820px; margin: 0 auto; padding: 16px; }
+.panel { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.hidden { display: none !important; }
+
+/* ===== 题型切换 ===== */
+.type-tabs {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+}
+.type-tab {
+  padding: 6px 16px; border-radius: 20px; background: #f0f2f5;
+  cursor: pointer; font-size: 14px; border: 1px solid transparent;
+  transition: all .2s; user-select: none;
+}
+.type-tab:hover { background: #e4e7eb; }
+.type-tab.active { background: #2d6a9f; color: #fff; border-color: #2d6a9f; }
+.type-tab .count { font-size: 12px; opacity: .7; margin-left: 4px; }
+
+/* ===== 题目区域 ===== */
+.question-area { min-height: 200px; }
+.q-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px; font-size: 13px; color: #888;
+}
+.q-header .q-progress { font-weight: 600; color: #333; }
+.q-title { font-size: 16px; line-height: 1.6; margin-bottom: 14px; font-weight: 500; }
+.q-code {
+  background: #1e293b; color: #e2e8f0; border-radius: 8px; padding: 16px;
+  font-family: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+  font-size: 13px; line-height: 1.5; overflow-x: auto; white-space: pre-wrap;
+  margin-bottom: 14px;
+}
+.q-desc { font-size: 14px; color: #555; margin-bottom: 14px; line-height: 1.5; }
+
+/* 选择题选项 */
+.options { display: flex; flex-direction: column; gap: 10px; }
+.option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 10px;
+  cursor: pointer; transition: all .2s; font-size: 15px;
+}
+.option:hover { border-color: #2d6a9f; background: #f7faff; }
+.option.selected { border-color: #2d6a9f; background: #e8f0fe; }
+.option .letter {
+  width: 28px; height: 28px; border-radius: 50%; background: #f0f2f5;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 13px; flex-shrink: 0;
+}
+.option.selected .letter { background: #2d6a9f; color: #fff; }
+.option.correct { border-color: #16a34a; background: #f0fdf4; }
+.option.correct .letter { background: #16a34a; color: #fff; }
+.option.wrong { border-color: #dc2626; background: #fef2f2; }
+.option.wrong .letter { background: #dc2626; color: #fff; }
+.option.reveal { border-color: #16a34a; background: #f0fdf4; }
+.option.reveal .letter { background: #16a34a; color: #fff; }
+.option.disabled { cursor: default; opacity: .8; }
+
+/* ===== 填空题输入 ===== */
+.fill-input-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+.fill-tag { display: inline-flex; align-items: center; gap: 6px; }
+.fill-tag .idx { font-size: 12px; color: #888; }
+.fill-tag input {
+  width: 140px; padding: 8px 12px; border: 2px solid #ddd; border-radius: 8px;
+  font-size: 15px; outline: none; transition: border-color .2s;
+}
+.fill-tag input:focus { border-color: #2d6a9f; }
+.fill-tag input.correct { border-color: #16a34a; background: #f0fdf4; }
+.fill-tag input.wrong { border-color: #dc2626; background: #fef2f2; }
+.fill-answer-reveal { font-size: 14px; color: #16a34a; margin: 8px 0; }
+
+/* ===== 简答题 ===== */
+.essay-area textarea {
+  width: 100%; min-height: 120px; padding: 12px; border: 2px solid #ddd;
+  border-radius: 8px; font-size: 15px; line-height: 1.6; resize: vertical;
+  outline: none; font-family: inherit;
+}
+.essay-area textarea:focus { border-color: #2d6a9f; }
+
+/* ===== 结果反馈 ===== */
+.result-box {
+  margin-top: 14px; padding: 14px 18px; border-radius: 10px;
+  font-size: 15px; line-height: 1.6;
+}
+.result-box.correct { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+.result-box.wrong { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.result-box.info { background: #f7f9fc; border: 1px solid #e0e0e0; color: #444; }
+.result-box .label { font-weight: 600; display: block; margin-bottom: 4px; }
+
+/* ===== 按钮 ===== */
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.btn {
+  padding: 8px 20px; border: none; border-radius: 8px; font-size: 14px;
+  cursor: pointer; transition: all .2s; font-weight: 500;
+}
+.btn:active { transform: scale(.97); }
+.btn-primary { background: #2d6a9f; color: #fff; }
+.btn-primary:hover { background: #1a4a7a; }
+.btn-success { background: #16a34a; color: #fff; }
+.btn-success:hover { background: #15803d; }
+.btn-outline { background: #fff; color: #333; border: 1px solid #ddd; }
+.btn-outline:hover { background: #f7f9fc; }
+.btn-danger { background: #dc2626; color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ===== 错题本 ===== */
+.wrong-item {
+  padding: 12px 16px; border-left: 4px solid #dc2626; background: #fef2f2;
+  border-radius: 8px; margin-bottom: 10px;
+}
+.wrong-item .q-text { font-weight: 500; margin-bottom: 4px; }
+.wrong-item .detail { font-size: 13px; color: #888; }
+.wrong-item .detail .your { color: #dc2626; }
+.wrong-item .detail .correct-ans { color: #16a34a; }
+.wrong-empty { text-align: center; color: #999; padding: 40px 0; font-size: 15px; }
+.action-row { display: flex; gap: 8px; margin-top: 10px; }
+
+/* ===== 排行榜 ===== */
+.rank-summary {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.rank-stat {
+  flex: 1; min-width: 100px; background: #f7f9fc; border-radius: 10px;
+  padding: 12px; text-align: center;
+}
+.rank-stat .num { font-size: 22px; font-weight: 700; color: #1a3a5c; }
+.rank-stat .lbl { font-size: 12px; color: #888; margin-top: 2px; }
+.rank-table {
+  width: 100%; border-collapse: collapse; font-size: 14px;
+}
+.rank-table th {
+  background: #f7f9fc; padding: 10px 8px; text-align: center;
+  font-weight: 600; color: #555; border-bottom: 2px solid #e0e0e0;
+}
+.rank-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+.rank-table tr:hover td { background: #fafbfc; }
+.rank-table .rank-1 { color: #f59e0b; }
+.rank-table .rank-2 { color: #94a3b8; }
+.rank-table .rank-3 { color: #cd7f32; }
+
+/* ===== 空状态 ===== */
+.placeholder {
+  text-align: center; color: #999; padding: 60px 20px;
+}
+.placeholder .icon { font-size: 48px; margin-bottom: 12px; }
+.placeholder p { font-size: 15px; line-height: 1.6; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 600px) {
+  .navbar h1 { font-size: 16px; }
+  .navbar .stats { font-size: 12px; }
+  .q-title { font-size: 15px; }
+  .fill-tag input { width: 110px; }
+  .rank-table { font-size: 12px; }
+  .rank-table th, .rank-table td { padding: 6px 4px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== 顶栏 ===== -->
+<div class="navbar">
+  <h1>📚 算法设计与分析 · 期末复习</h1>
+  <div class="stats" id="navStats">
+    <span>📊 <span id="totalDone">0</span> 题</span>
+    <span>✅ <span id="totalCorrect">0</span></span>
+    <span>📈 <span id="totalRate">0%</span></span>
+    <span>📕 错题 <span id="navWrong">0</span></span>
+  </div>
+</div>
+<div class="loading-bar" id="loadingBar"></div>
+
+<!-- ===== 标签栏 ===== -->
+<div class="tab-bar">
+  <div class="tab active" data-tab="practice" onclick="switchTab('practice')">✏️ 练习</div>
+  <div class="tab" data-tab="wrongbook" onclick="switchTab('wrongbook')">📕 错题本 (<span id="wrongTabCount">0</span>)</div>
+  <div class="tab" data-tab="rank" onclick="switchTab('rank')">🏆 排行榜</div>
+</div>
+
+<div class="container">
+
+  <!-- ============================================================ -->
+  <!-- TAB 1：练习 -->
+  <!-- ============================================================ -->
+  <div id="tab-practice">
+    <!-- 题型分类标签（JS动态生成） -->
+    <div class="type-tabs" id="typeTabs"></div>
+
+    <!-- 设置区 -->
+    <div class="panel" id="settingsPanel">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+        <label style="font-size:14px">📝 每次出题数：
+          <select id="countSelect" style="margin-left:4px;padding:4px 8px;border-radius:6px;border:1px solid #ddd;font-size:14px">
+            <option value="1">1 题</option>
+            <option value="5">5 题</option>
+            <option value="10" selected>10 题</option>
+            <option value="20">20 题</option>
+            <option value="0">全部</option>
+          </select>
+        </label>
+        <button class="btn btn-primary" onclick="startPractice()">🚀 开始练习</button>
+      </div>
+    </div>
+
+    <!-- 题目区 -->
+    <div class="panel hidden" id="practicePanel">
+      <div class="q-header">
+        <span class="q-progress" id="qProgress"></span>
+        <span id="qTypeLabel" style="background:#eef2ff;padding:2px 10px;border-radius:12px;font-size:13px;color:#4f46e5"></span>
+      </div>
+      <div class="question-area" id="questionArea"></div>
+    </div>
+
+    <!-- 无题目时的空状态 -->
+    <div class="placeholder" id="emptyState">
+      <div class="icon">📭</div>
+      <p>题库加载中……<br>请确保 questions/ 目录下有题目文件。</p>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 2：错题本 -->
+  <!-- ============================================================ -->
+  <div id="tab-wrongbook" class="hidden">
+    <div class="panel">
+      <h2 style="font-size:18px;margin-bottom:4px">📕 错题本 <span class="wrong-count-badge" id="wrongTitleCount" style="font-size:13px;color:#888"></span></h2>
+      <p style="font-size:13px;color:#999;margin-bottom:12px">答错的题目自动收录在这里，方便集中复习</p>
+      <div id="wrongList"><div class="wrong-empty">✨ 暂无错题，继续加油！</div></div>
+      <div class="action-row" id="wrongActions" style="display:none">
+        <button class="btn btn-primary" onclick="replayWrong()">🔄 重做错题</button>
+        <button class="btn btn-danger" onclick="clearWrongBook()">🗑️ 清空错题本</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- TAB 3：排行榜 -->
+  <!-- ============================================================ -->
+  <div id="tab-rank" class="hidden">
+    <div class="panel">
+      <h2 style="font-size:18px;margin-bottom:12px">🏆 排行榜 <span style="font-size:13px;font-weight:400;color:#999">（按正确率排名）</span></h2>
+      <div class="rank-summary" id="rankSummary"></div>
+      <table class="rank-table">
+        <thead><tr>
+          <th>排名</th>
+          <th>题型</th>
+          <th>答题数</th>
+          <th>正确数</th>
+          <th>错误数</th>
+          <th>正确率</th>
+          <th>状态</th>
+        </tr></thead>
+        <tbody id="rankBody"></tbody>
+      </table>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="resetAllData()">♻️ 重置所有记录</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ================================================================
+//  主逻辑 —— 页面初始化由 onQuestionsLoaded 触发
+// ================================================================
+
+(function() {
+
+  // ---- 数据 ----
+  let currentQuestions = [];       // 当前练习的题目列表
+  let currentIndex = 0;           // 当前第几题
+  let currentAnswers = {};        // { 题目id: 用户答案 }
+  let currentAnswered = false;    // 当前题目是否已提交
+  let currentCorrect = false;     // 当前题目是否答对
+  let practiceMode = 'normal';    // 'normal' | 'wrong-replay'
+  let wrongReplayList = [];       // 重做错题时的题目列表
+
+  // 持久化数据
+  let wrongBook = JSON.parse(localStorage.getItem('algoWrongBook_v2') || '[]');
+  // scoreData: { "选择题": {done, correct}, "填空题": {...}, ... }
+  let scoreData = JSON.parse(localStorage.getItem('algoScoreData_v2') || '{}');
+
+  // DOM 引用
+  const $ = function(id) { return document.getElementById(id); };
+  const typeTabs = $('typeTabs');
+  const settingsPanel = $('settingsPanel');
+  const practicePanel = $('practicePanel');
+  const emptyState = $('emptyState');
+  const questionArea = $('questionArea');
+  const qProgress = $('qProgress');
+  const qTypeLabel = $('qTypeLabel');
+
+  var selectedType = null;  // 当前选中的题型
+
+  // ==============================================================
+  //  初始化 —— 由题库加载器回调
+  // ==============================================================
+  window.onQuestionsLoaded = function(bank) {
+    $('loadingBar').style.width = '100%';
+    setTimeout(function() { $('loadingBar').style.width = '0%'; }, 600);
+
+    renderTypeTabs();
+    updateNavStats();
+    renderWrongBook();
+    renderRank();
+
+    // 默认选中第一个有题的题型
+    var types = window.题库.getTypes();
+    if (types.length > 0) {
+      selectType(types[0]);
+    } else {
+      emptyState.querySelector('p').textContent = '❌ 未找到任何题目，请检查 questions/ 目录。';
+      emptyState.classList.remove('hidden');
+    }
+  };
+
+  // 备用：如果题库加载器已经加载完才绑定回调
+  if (window.题库 && window.题库._raw && Object.keys(window.题库._raw).length > 0) {
+    window.onQuestionsLoaded(window.题库._raw);
+  }
+
+  // ==============================================================
+  //  题型标签
+  // ==============================================================
+  function renderTypeTabs() {
+    var types = window.题库.getTypes();
+    typeTabs.innerHTML = types.map(function(t) {
+      var count = window.题库.getTypeCount(t);
+      return '<div class="type-tab" data-type="' + t + '" onclick="selectType(\'' + t + '\')">'
+           + t + ' <span class="count">(' + count + ')</span></div>';
+    }).join('');
+  }
+
+  // 选择题型（暴露到全局供 onclick 调用）
+  window.selectType = function(type) {
+    selectedType = type;
+    // 高亮
+    typeTabs.querySelectorAll('.type-tab').forEach(function(el) {
+      el.classList.toggle('active', el.dataset.type === type);
+    });
+    // 更新开始练习按钮文字
+    var count = window.题库.getTypeCount(type);
+    var btn = settingsPanel.querySelector('.btn-primary');
+    btn.textContent = '🚀 开始练习（' + count + ' 题）';
+    // 隐藏之前的题目
+    practicePanel.classList.add('hidden');
+    emptyState.classList.add('hidden');
+  };
+
+  // ==============================================================
+  //  开始练习
+  // ==============================================================
+  window.startPractice = function() {
+    if (!selectedType) { alert('请先选择一个题型'); return; }
+    var countVal = parseInt($('countSelect').value);
+    var pool;
+    if (countVal === 0) {
+      pool = window.题库.getQuestions(selectedType).slice();
+      // 洗牌
+      for (var i = pool.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+      }
+    } else {
+      pool = window.题库.getRandomQuestions(selectedType, countVal);
+    }
+
+    if (pool.length === 0) { alert('该题型暂无题目'); return; }
+
+    currentQuestions = pool;
+    currentIndex = 0;
+    currentAnswers = {};
+    practiceMode = 'normal';
+
+    settingsPanel.classList.add('hidden');
+    practicePanel.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    renderQuestion();
+  };
+
+  // ==============================================================
+  //  渲染题目
+  // ==============================================================
+  function renderQuestion() {
+    if (currentIndex >= currentQuestions.length) {
+      finishPractice();
+      return;
+    }
+
+    var q = currentQuestions[currentIndex];
+    currentAnswered = false;
+    currentCorrect = false;
+
+    qProgress.textContent = (currentIndex + 1) + ' / ' + currentQuestions.length;
+    qTypeLabel.textContent = selectedType;
+
+    var hasOptions = Array.isArray(q.options) && q.options.length > 0;
+    var hasCode = !!q.code;
+    var hasTitle = !!q.title;
+    var isFill = selectedType === '填空题';
+
+    var html = '';
+
+    if (hasTitle) {
+      html += '<div class="q-title">' + escapeHtml(q.title) + '</div>';
+    }
+    html += '<div class="q-title">' + escapeHtml(q.question) + '</div>';
+
+    if (hasCode) {
+      html += '<div class="q-code">' + q.code + '</div>';
+    }
+    if (q.description) {
+      html += '<div class="q-desc">' + escapeHtml(q.description) + '</div>';
+    }
+
+    // 选择题
+    if (hasOptions) {
+      var letters = ['A','B','C','D','E','F'];
+      html += '<div class="options" id="optionsContainer">';
+      q.options.forEach(function(opt, i) {
+        var letter = letters[i] || String.fromCharCode(65 + i);
+        html += '<div class="option" data-letter="' + letter + '" onclick="selectOption(this, \'' + q.id + '\')">'
+             + '<span class="letter">' + letter + '</span>'
+             + '<span>' + escapeHtml(opt) + '</span></div>';
+      });
+      html += '</div>';
+    }
+
+    // 填空题
+    if (isFill) {
+      var parts = parseFillBlanks(q.question);
+      html += '<div class="fill-input-row" id="fillRow">';
+      parts.forEach(function(p, i) {
+        if (p.type === 'blank') {
+          html += '<span class="fill-tag">'
+               + '<span class="idx">(' + (p.idx + 1) + ')</span>'
+               + '<input type="text" id="fill_' + p.idx + '" data-idx="' + p.idx + '" placeholder="填空' + (p.idx + 1) + '">'
+               + '</span>';
+        } else {
+          html += '<span>' + escapeHtml(p.text) + '</span>';
+        }
+      });
+      html += '</div>';
+    }
+
+    // 简答题 / 案例分析
+    if (!hasOptions && !isFill) {
+      html += '<div class="essay-area">'
+           + '<textarea id="essayInput" placeholder="写下你的答案……"></textarea></div>';
+    }
+
+    // 按钮
+    html += '<div class="btn-row">';
+    if (hasOptions || isFill) {
+      html += '<button class="btn btn-success" id="checkBtn" onclick="checkAnswer()">✅ 提交答案</button>';
+    } else {
+      html += '<button class="btn btn-success" id="checkBtn" onclick="showEssayAnswer()">👁️ 查看答案</button>';
+    }
+    html += '<button class="btn btn-outline" id="skipBtn" onclick="nextQuestion()">⏭️ 下一题</button>';
+    html += '</div>';
+
+    // 结果区
+    html += '<div id="resultBox" class="result-box hidden"></div>';
+
+    questionArea.innerHTML = html;
+  }
+
+  // ==============================================================
+  //  选择题：选择选项
+  // ==============================================================
+  window.selectOption = function(el, qid) {
+    if (currentAnswered) return;
+    document.querySelectorAll('.option').forEach(function(o) { o.classList.remove('selected'); });
+    el.classList.add('selected');
+    currentAnswers[qid] = el.dataset.letter;
+  };
+
+  // ==============================================================
+  //  提交答案
+  // ==============================================================
+  window.checkAnswer = function() {
+    if (currentAnswered) return;
+    var q = currentQuestions[currentIndex];
+    if (!q) return;
+
+    var correct = false;
+    var userAnswer = '';
+    var isMC = Array.isArray(q.options) && q.options.length > 0;
+    var isFill = selectedType === '填空题';
+
+    if (isMC) {
+      userAnswer = currentAnswers[q.id] || '';
+      if (!userAnswer) { alert('请先选择一个选项'); return; }
+      correct = userAnswer === q.answer;
+    } else if (isFill) {
+      var blanks = parseFillBlanks(q.question);
+      var correctAnswers = q.answer.split(',').map(function(s) { return s.trim(); });
+      var allFilled = true;
+      var userParts = [];
+      blanks.forEach(function(b, i) {
+        if (b.type === 'blank') {
+          var input = document.getElementById('fill_' + b.idx);
+          if (!input) return;
+          var val = input.value.trim();
+          userParts.push(val);
+          if (!val) allFilled = false;
+          var isCorrect = val.toLowerCase() === (correctAnswers[b.idx] || '').toLowerCase();
+          input.classList.add(isCorrect ? 'correct' : 'wrong');
+          if (!isCorrect) {
+            input.classList.add('wrong');
+          }
+        }
+      });
+      if (!allFilled) { alert('请填写所有填空'); return; }
+      userAnswer = userParts.join(', ');
+      correct = userParts.every(function(v, i) {
+        return v.toLowerCase() === (correctAnswers[i] || '').toLowerCase();
+      });
+    }
+
+    currentAnswered = true;
+    currentCorrect = correct;
+
+    // 禁用选项
+    if (isMC) {
+      document.querySelectorAll('.option').forEach(function(o) {
+        o.classList.add('disabled');
+        if (o.dataset.letter === q.answer) o.classList.add('correct');
+        else if (o.classList.contains('selected') && !correct) o.classList.add('wrong');
+      });
+    }
+
+    // 显示结果
+    var resultBox = document.getElementById('resultBox');
+    if (correct) {
+      resultBox.className = 'result-box correct';
+      resultBox.innerHTML = '<span class="label">✅ 回答正确！</span>';
+    } else {
+      resultBox.className = 'result-box wrong';
+      resultBox.innerHTML = '<span class="label">❌ 回答错误</span>';
+      if (isMC) {
+        resultBox.innerHTML += '正确答案：<strong>' + q.answer + '</strong>';
+      } else if (isFill) {
+        resultBox.innerHTML += '正确答案：<strong>' + escapeHtml(q.answer) + '</strong>';
+        // 显示每个空的正确答案
+        var correctAnswers = q.answer.split(',').map(function(s) { return s.trim(); });
+        var parts = parseFillBlanks(q.question);
+        var detailHtml = '<div style="margin-top:6px">';
+        parts.forEach(function(p, i) {
+          if (p.type === 'blank') {
+            detailHtml += '<span style="margin-right:12px">(' + (p.idx + 1) + ') ' + escapeHtml(correctAnswers[p.idx] || '') + '</span>';
+          }
+        });
+        detailHtml += '</div>';
+        resultBox.innerHTML += detailHtml;
+      }
+      // 加入错题本
+      addToWrongBook(q, userAnswer);
+    }
+
+    resultBox.classList.remove('hidden');
+
+    // 记录成绩
+    recordScore(selectedType, correct);
+
+    // 修改按钮
+    var checkBtn = document.getElementById('checkBtn');
+    if (checkBtn) {
+      checkBtn.textContent = correct ? '✅ 已正确' : '❌ 已答题';
+      checkBtn.disabled = true;
+    }
+
+    updateNavStats();
+  };
+
+  // ==============================================================
+  //  简答题：查看答案
+  // ==============================================================
+  window.showEssayAnswer = function() {
+    if (currentAnswered) return;
+    var q = currentQuestions[currentIndex];
+    if (!q) return;
+
+    currentAnswered = true;
+
+    var resultBox = document.getElementById('resultBox');
+    resultBox.className = 'result-box info';
+    resultBox.innerHTML = '<span class="label">📖 参考答案</span>' + escapeHtml(q.answer || q.description || '');
+    resultBox.classList.remove('hidden');
+
+    var checkBtn = document.getElementById('checkBtn');
+    if (checkBtn) { checkBtn.textContent = '👁️ 已查看'; checkBtn.disabled = true; }
+
+    // 简答题不计对错，但标记为已做
+    recordScore(selectedType, null);
+  };
+
+  // ==============================================================
+  //  下一题
+  // ==============================================================
+  window.nextQuestion = function() {
+    currentIndex++;
+    if (currentIndex >= currentQuestions.length) {
+      finishPractice();
+    } else {
+      renderQuestion();
+    }
+  };
+
+  // ==============================================================
+  //  完成练习
+  // ==============================================================
+  function finishPractice() {
+    questionArea.innerHTML = '<div class="placeholder"><div class="icon">🎉</div><p>本次练习完成！<br>共 ' + currentQuestions.length + ' 题。</p>'
+      + '<button class="btn btn-primary" onclick="backToSettings()" style="margin-top:12px">📋 返回设置</button></div>';
+  }
+
+  window.backToSettings = function() {
+    practicePanel.classList.add('hidden');
+    settingsPanel.classList.remove('hidden');
+  };
+
+  // ==============================================================
+  //  分数记录
+  // ==============================================================
+  function recordScore(type, correct) {
+    if (!scoreData[type]) scoreData[type] = { done: 0, correct: 0 };
+    scoreData[type].done++;
+    if (correct === true) scoreData[type].correct++;
+    localStorage.setItem('algoScoreData_v2', JSON.stringify(scoreData));
+  }
+
+  // ==============================================================
+  //  错题本
+  // ==============================================================
+  function addToWrongBook(q, userAnswer) {
+    // 去重
+    var exists = wrongBook.some(function(w) { return w.id === q.id; });
+    if (exists) return;
+    wrongBook.push({
+      id: q.id,
+      type: selectedType,
+      question: q.question,
+      options: q.options || null,
+      answer: q.answer,
+      userAnswer: userAnswer,
+      code: q.code || null,
+      title: q.title || null,
+      description: q.description || null,
+      time: new Date().toLocaleString()
+    });
+    saveWrongBook();
+  }
+
+  function saveWrongBook() {
+    localStorage.setItem('algoWrongBook_v2', JSON.stringify(wrongBook));
+    $('wrongTabCount').textContent = wrongBook.length;
+    $('navWrong').textContent = wrongBook.length;
+    renderWrongBook();
+  }
+
+  function renderWrongBook() {
+    var list = $('wrongList');
+    var actions = $('wrongActions');
+    if (wrongBook.length === 0) {
+      list.innerHTML = '<div class="wrong-empty">✨ 暂无错题，继续加油！</div>';
+      actions.style.display = 'none';
+      return;
+    }
+    actions.style.display = 'flex';
+    $('wrongTitleCount').textContent = '（共 ' + wrongBook.length + ' 题）';
+
+    list.innerHTML = wrongBook.map(function(w, idx) {
+      var hasOpt = Array.isArray(w.options) && w.options.length > 0;
+      var letters = ['A','B','C','D','E','F'];
+      var optHtml = '';
+      if (hasOpt) {
+        optHtml = '<div style="margin-top:6px;font-size:13px">';
+        w.options.forEach(function(o, i) {
+          var l = letters[i];
+          var cls = l === w.answer ? 'correct-ans' : (l === w.userAnswer ? 'your' : '');
+          optHtml += '<span style="margin-right:10px;' + (cls === 'correct-ans' ? 'color:#16a34a;font-weight:600' : cls === 'your' ? 'color:#dc2626;text-decoration:line-through' : '') + '">'
+                   + l + '. ' + escapeHtml(o) + '</span>';
+        });
+        optHtml += '</div>';
+      }
+
+      var title = w.title ? '<strong>' + escapeHtml(w.title) + '</strong><br>' : '';
+      return '<div class="wrong-item">'
+        + '<div class="q-text">' + title + escapeHtml(w.question) + '</div>'
+        + optHtml
+        + '<div class="detail">你认为：<span class="your">' + escapeHtml(w.userAnswer || '未作答') + '</span>'
+        + ' ｜ 正确答案：<span class="correct-ans">' + escapeHtml(w.answer) + '</span>'
+        + ' ｜ <span style="color:#999;font-size:12px">' + w.time + '</span></div>'
+        + '<div style="margin-top:6px"><span style="background:#eef2ff;padding:2px 8px;border-radius:10px;font-size:12px;color:#4f46e5">' + w.type + '</span></div>'
+        + '</div>';
+    }).join('');
+  }
+
+  window.clearWrongBook = function() {
+    if (!confirm('确定清空所有错题？')) return;
+    wrongBook = [];
+    saveWrongBook();
+  };
+
+  window.replayWrong = function() {
+    if (wrongBook.length === 0) { alert('没有错题可重做'); return; }
+    var pool = wrongBook.slice();
+    // 根据题型分组
+    var byType = {};
+    pool.forEach(function(w) {
+      if (!byType[w.type]) byType[w.type] = [];
+      // 从题库中找回完整题目数据
+      var fullQ = window.题库.getQuestions(w.type).find(function(q) { return q.id === w.id; });
+      if (fullQ) byType[w.type].push(fullQ);
+    });
+    var all = [];
+    Object.values(byType).forEach(function(arr) { all = all.concat(arr); });
+    if (all.length === 0) { alert('错题在题库中已不存在，请先清空错题本'); return; }
+    // 洗牌
+    for (var i = all.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = all[i]; all[i] = all[j]; all[j] = tmp;
+    }
+    currentQuestions = all;
+    currentIndex = 0;
+    currentAnswers = {};
+    practiceMode = 'wrong-replay';
+
+    // 切到练习标签
+    switchTab('practice');
+    selectedType = '错题重做';
+    settingsPanel.classList.add('hidden');
+    practicePanel.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+    renderQuestion();
+  };
+
+  // ==============================================================
+  //  排行榜
+  // ==============================================================
+  function renderRank() {
+    var types = window.题库.getTypes();
+    var body = $('rankBody');
+    var summary = $('rankSummary');
+
+    var totalDone = 0, totalCorrect = 0;
+    var rows = [];
+    types.forEach(function(t) {
+      var sd = scoreData[t] || { done: 0, correct: 0 };
+      totalDone += sd.done;
+      totalCorrect += sd.correct;
+      var rate = sd.done > 0 ? (sd.correct / sd.done * 100) : 0;
+      rows.push({
+        type: t,
+        done: sd.done,
+        correct: sd.correct,
+        wrong: sd.done - sd.correct,
+        rate: rate
+      });
+    });
+
+    // 排序（正确率降序）
+    rows.sort(function(a, b) { return b.rate - a.rate; });
+
+    // 汇总
+    var totalRate = totalDone > 0 ? (totalCorrect / totalDone * 100) : 0;
+    summary.innerHTML = ''
+      + '<div class="rank-stat"><div class="num">' + totalDone + '</div><div class="lbl">总答题数</div></div>'
+      + '<div class="rank-stat"><div class="num">' + totalCorrect + '</div><div class="lbl">总正确数</div></div>'
+      + '<div class="rank-stat"><div class="num">' + (totalDone - totalCorrect) + '</div><div class="lbl">总错误数</div></div>'
+      + '<div class="rank-stat"><div class="num">' + totalRate.toFixed(1) + '%</div><div class="lbl">总正确率</div></div>';
+
+    if (rows.length === 0) {
+      body.innerHTML = '<tr><td colspan="7" style="color:#999;padding:20px">暂无答题记录</td></tr>';
+      return;
+    }
+
+    body.innerHTML = rows.map(function(r, idx) {
+      var rankClass = '';
+      if (idx === 0) rankClass = 'rank-1';
+      else if (idx === 1) rankClass = 'rank-2';
+      else if (idx === 2) rankClass = 'rank-3';
+      var medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : (idx + 1);
+      var rateStr = r.done > 0 ? r.rate.toFixed(1) + '%' : '—';
+      var status = r.done === 0 ? '⏳ 未开始'
+                 : r.rate === 100 ? '💪 完美'
+                 : r.rate >= 80 ? '👍 优秀'
+                 : r.rate >= 60 ? '📖 继续'
+                 : '🎯 加油';
+      return '<tr>'
+        + '<td class="' + rankClass + '" style="font-weight:700;font-size:16px">' + medal + '</td>'
+        + '<td>' + r.type + '</td>'
+        + '<td>' + r.done + '</td>'
+        + '<td>' + r.correct + '</td>'
+        + '<td>' + r.wrong + '</td>'
+        + '<td style="font-weight:600;color:' + (r.rate >= 80 ? '#16a34a' : r.rate >= 50 ? '#f59e0b' : '#dc2626') + '">' + rateStr + '</td>'
+        + '<td>' + status + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  // ==============================================================
+  //  标签切换
+  // ==============================================================
+  window.switchTab = function(tabName) {
+    document.querySelectorAll('.tab').forEach(function(el) {
+      el.classList.toggle('active', el.dataset.tab === tabName);
+    });
+    ['practice', 'wrongbook', 'rank'].forEach(function(name) {
+      var el = document.getElementById('tab-' + name);
+      if (el) el.classList.toggle('hidden', name !== tabName);
+    });
+    if (tabName === 'wrongbook') renderWrongBook();
+    if (tabName === 'rank') renderRank();
+  };
+
+  // ==============================================================
+  //  状态栏更新
+  // ==============================================================
+  function updateNavStats() {
+    var totalDone = 0, totalCorrect = 0;
+    Object.values(scoreData).forEach(function(s) {
+      totalDone += (s.done || 0);
+      totalCorrect += (s.correct || 0);
+    });
+    $('totalDone').textContent = totalDone;
+    $('totalCorrect').textContent = totalCorrect;
+    $('totalRate').textContent = totalDone > 0 ? (totalCorrect / totalDone * 100).toFixed(1) + '%' : '0%';
+    $('navWrong').textContent = wrongBook.length;
+    $('wrongTabCount').textContent = wrongBook.length;
+  }
+
+  // ==============================================================
+  //  重置数据
+  // ==============================================================
+  window.resetAllData = function() {
+    if (!confirm('确定重置所有答题记录和错题？此操作不可恢复！')) return;
+    localStorage.removeItem('algoWrongBook_v2');
+    localStorage.removeItem('algoScoreData_v2');
+    wrongBook = [];
+    scoreData = {};
+    saveWrongBook();
+    updateNavStats();
+    renderRank();
+  };
+
+  // ==============================================================
+  //  工具函数
+  // ==============================================================
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  // 解析填空题文本中的空位（）
+  function parseFillBlanks(text) {
+    var result = [];
+    var idx = 0;
+    // 匹配中文括号内的空
+    var regex = /（[\s]*）|（[\s]*[\u4e00-\u9fff\w]+[\s]*）|\([\s]*\)/g;
+    var lastIndex = 0;
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        result.push({ type: 'text', text: text.substring(lastIndex, match.index) });
+      }
+      result.push({ type: 'blank', idx: idx++, text: match[0] });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < text.length) {
+      result.push({ type: 'text', text: text.substring(lastIndex) });
+    }
+    return result;
+  }
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+# 原始题库源文件（已拆分成 questions/ 下的结构化文件，不再直接引用）
+deepseek_javascript_20260602_*.js
+
+# 系统文件
+Thumbs.db
+.DS_Store
+desktop.ini
