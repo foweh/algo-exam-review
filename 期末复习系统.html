@@ -579,6 +579,14 @@ body {
       html += '<div class="q-desc">' + escapeHtml(q.description) + '</div>';
     }
 
+    // 如果题目有 answer 且无 options，说明是问答题/算法分析题，显示答案提示
+    if (!hasOptions && q.answer && !q.code) {
+      html += '<div style="margin-top:12px">'
+           + '<textarea id="codeAnswerInput" rows="5" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-family:inherit;font-size:14px;line-height:1.6;resize:vertical;outline:none" placeholder="在此输入你的答案…"></textarea>'
+           + '<button class="btn btn-primary" style="margin-top:10px" onclick="submitCodeAnswer(\'' + q.id + '\')">✅ 提交答案</button>'
+           + '</div>';
+    }
+
     if (hasOptions) {
       html += '<div class="options" id="practiceOptions">';
       q.options.forEach(function(opt, i) {
@@ -588,6 +596,12 @@ body {
              + '<span>' + escapeHtml(opt) + '</span></div>';
       });
       html += '</div>';
+    } else if (q.code) {
+      // 算法案例分析·补全代码：显示代码输入框
+      html += '<div style="margin-top:12px">'
+           + '<textarea id="codeAnswerInput" rows="6" style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-family:monospace;font-size:14px;line-height:1.6;resize:vertical;outline:none" placeholder="在此补全代码…" onfocus="this.style.borderColor=\'#2d6a9f\'" onblur="this.style.borderColor=\'#e0e0e0\'"></textarea>'
+           + '<button class="btn btn-primary" style="margin-top:10px" onclick="submitCodeAnswer(\'' + q.id + '\')">✅ 提交答案</button>'
+           + '</div>';
     }
 
     html += '<div class="btn-row">';
@@ -609,17 +623,34 @@ body {
     showPracticeResult();
   };
 
+  window.submitCodeAnswer = function(qid) {
+    if (currentAnswered) return;
+    var input = document.getElementById('codeAnswerInput');
+    if (!input) return;
+    var answer = input.value.trim();
+    if (!answer) { alert('请先输入答案再提交'); return; }
+    currentAnswers[qid] = answer;
+    showPracticeResult();
+  };
+
   function showPracticeResult() {
     var q = currentQuestions[currentIndex];
     var userAnswer = currentAnswers[q.id] || '';
+    var hasOptions = Array.isArray(q.options) && q.options.length > 0;
     var correct = userAnswer === q.answer;
     currentAnswered = true;
 
-    document.querySelectorAll('#practiceOptions .option').forEach(function(o) {
-      o.classList.add('disabled');
-      if (o.dataset.letter === q.answer) o.classList.add('correct');
-      else if (o.classList.contains('selected') && !correct) o.classList.add('wrong');
-    });
+    if (hasOptions) {
+      document.querySelectorAll('#practiceOptions .option').forEach(function(o) {
+        o.classList.add('disabled');
+        if (o.dataset.letter === q.answer) o.classList.add('correct');
+        else if (o.classList.contains('selected') && !correct) o.classList.add('wrong');
+      });
+    } else {
+      // 禁用输入框和提交按钮
+      var input = document.getElementById('codeAnswerInput');
+      if (input) input.disabled = true;
+    }
 
     var resultBox = document.getElementById('practiceResult');
     if (correct) {
@@ -629,7 +660,7 @@ body {
     } else {
       resultBox.className = 'result-box wrong';
       resultBox.innerHTML = '<span class="label">❌ 回答错误</span>'
-                         + '｜正确答案：<strong>' + q.answer + '</strong>';
+                         + '｜正确答案：<strong>' + escapeHtml(q.answer) + '</strong>';
       addToWrongBook(q, userAnswer);
     }
     resultBox.classList.remove('hidden');
