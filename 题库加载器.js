@@ -50,7 +50,9 @@
     'questions/选择题.js',
     'questions/填空题.js',
     'questions/简答题.js',
-    'questions/算法案例分析.js'
+    'questions/算法案例分析.js',
+    'questions/explanations.js',
+    'questions/知识点.js'
   ];
 
   // ==========================================================
@@ -131,6 +133,24 @@
         pool[j] = tmp;
       }
       return pool.slice(0, Math.min(n, pool.length));
+    },
+
+    /** 获取所有知识点 */
+    getKnowledgePoints: function() {
+      return window.题库._knowledgePoints || [];
+    },
+
+    /** 搜索知识点 */
+    searchKnowledgePoints: function(keyword) {
+      var points = window.题库._knowledgePoints || [];
+      if (!keyword || keyword.trim() === '') return points;
+      keyword = keyword.toLowerCase().trim();
+      return points.filter(function(p) {
+        return p.title.toLowerCase().includes(keyword) ||
+               p.category.toLowerCase().includes(keyword) ||
+               p.content.toLowerCase().includes(keyword) ||
+               p.keywords.some(function(k) { return k.toLowerCase().includes(keyword); });
+      });
     },
 
     /** 原始数据（直接操作） */

@@ -1,0 +1,5 @@
+[[plugins]]
+name = "codegraph"
+type = "stdio"
+command = "C:\\Users\\Administrator\\IdeaProjects\\kaoshi\\codegraph\\codegraph-win32-x64\\bin\\codegraph.cmd"
+args = ["serve", "--mcp"]

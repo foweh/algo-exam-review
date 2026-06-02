@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "codegraph": {
+      "type": "stdio",
+      "command": "C:\\Users\\Administrator\\IdeaProjects\\kaoshi\\codegraph\\codegraph-win32-x64\\bin\\codegraph.cmd",
+      "args": ["serve", "--mcp"]
+    },
+    "wps-office": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["C:\\Users\\Administrator\\IdeaProjects\\kaoshi\\wps-skills\\wps-office-mcp\\dist\\index.js"]
+    }
+  }
+}
